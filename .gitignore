@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.log
+.env
+.env.*
+data/
+word_learning.db
+word_learning.db-*
+*.sqlite
+*.sqlite3
+*.bak

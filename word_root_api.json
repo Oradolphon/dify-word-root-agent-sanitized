@@ -1,0 +1,1372 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Word Root Manager",
+    "version": "1.4.0",
+    "description": "词根词源记忆、词族笔记、CET 学习卡和间隔复习 API"
+  },
+  "servers": [
+    {
+      "url": "http://host.docker.internal:5000"
+    }
+  ],
+  "paths": {
+    "/add_word": {
+      "post": {
+        "operationId": "addWord",
+        "summary": "添加单词到词根家族",
+        "description": "当用户学习了一个新单词时，将其添加到对应词根家族的文件中",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "word": {
+                    "type": "string",
+                    "description": "单词"
+                  },
+                  "root": {
+                    "type": "string",
+                    "description": "词根，如 spect"
+                  },
+                  "meaning": {
+                    "type": "string",
+                    "description": "核心意象"
+                  },
+                  "example": {
+                    "type": "string",
+                    "description": "英文例句（自造句不得标作真题）"
+                  }
+                },
+                "required": [
+                  "word",
+                  "root",
+                  "meaning"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "添加成功或重复",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "duplicate"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/batch_add": {
+      "post": {
+        "operationId": "batchAdd",
+        "summary": "批量添加单词到词根家族",
+        "description": "一次性添加多个单词，每个单词需要 word、root、meaning 字段。返回汇总结果。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "words": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "word": {
+                          "type": "string"
+                        },
+                        "root": {
+                          "type": "string"
+                        },
+                        "meaning": {
+                          "type": "string"
+                        },
+                        "example": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "word",
+                        "root",
+                        "meaning"
+                      ]
+                    },
+                    "description": "要添加的单词列表，最多100个"
+                  }
+                },
+                "required": [
+                  "words"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "批量添加完成",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "added": {
+                          "type": "integer"
+                        },
+                        "duplicate": {
+                          "type": "integer"
+                        },
+                        "error": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "word": {
+                            "type": "string",
+                            "description": ""
+                          },
+                          "root": {
+                            "type": "string",
+                            "description": ""
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": ""
+                          },
+                          "message": {
+                            "type": "string",
+                            "description": ""
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/delete_word": {
+      "post": {
+        "operationId": "deleteWord",
+        "summary": "从词根家族中删除单词",
+        "description": "将指定单词从指定词根家族的 txt 和 md 文件中移除",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "word": {
+                    "type": "string",
+                    "description": "要删除的单词"
+                  },
+                  "root": {
+                    "type": "string",
+                    "description": "词根名"
+                  }
+                },
+                "required": [
+                  "word",
+                  "root"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "删除成功或未找到",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "not_found"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/list_roots": {
+      "get": {
+        "operationId": "listRoots",
+        "summary": "列出所有词根家族",
+        "description": "返回所有已有的词根家族名称",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "roots": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/read_family/{root}": {
+      "get": {
+        "operationId": "readFamily",
+        "summary": "查看某个词根家族的所有单词",
+        "description": "根据词根名返回该家族的所有单词",
+        "parameters": [
+          {
+            "name": "root",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "词根名，如 spect"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "root": {
+                      "type": "string"
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "words": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/read_notes/{root}": {
+      "get": {
+        "operationId": "readNotes",
+        "summary": "读取某个词根家族的 Markdown 笔记",
+        "description": "返回完整的 Markdown 笔记内容（含单词、核心意象、例句（出处未核实）表格）",
+        "parameters": [
+          {
+            "name": "root",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "词根名，如 spect"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "root": {
+                      "type": "string"
+                    },
+                    "notes": {
+                      "type": "string",
+                      "description": "Markdown 全文"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/find_word/{word}": {
+      "get": {
+        "operationId": "findWord",
+        "summary": "查找单词属于哪些词根家族",
+        "description": "反向索引：给定一个单词，返回它所属的所有词根家族。可用于判断一个词是否已学过。",
+        "parameters": [
+          {
+            "name": "word",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "要查找的单词"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "word": {
+                      "type": "string"
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "families": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "该单词所属的词根家族列表，空列表表示未学过"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/etymology/{word}": {
+      "get": {
+        "operationId": "getEtymology",
+        "summary": "查询单词的词源信息",
+        "description": "优先查询本地 CET 词源数据库（毫秒级），未命中再查 Wiktionary/Etymonline。返回词源文本和音标（ipa 字段，国际音标）。Agent 需解读词源并翻译成中文；当返回体含 ipa 字段时，首次提到该单词要在其后附上 ipa 中的音标，没有 ipa 就不要标注。",
+        "parameters": [
+          {
+            "name": "word",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "要查询词源的单词"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "word": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string",
+                      "description": "数据来源：cet_db、wiktionary 或 etymonline"
+                    },
+                    "etymology": {
+                      "type": "string",
+                      "description": "词源原始文本"
+                    },
+                    "ipa": {
+                      "type": "string",
+                      "description": "国际音标（IPA），可能不存在；存在时首次提到该单词要附上它",
+                      "nullable": true
+                    },
+                    "level": {
+                      "type": "string",
+                      "description": "本地 CET 词表标签",
+                      "nullable": true
+                    },
+                    "pie_root": {
+                      "type": "string",
+                      "description": "原始印欧语词根，可能为空",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "当前查询未找到可用词源段落；不代表单词不存在或所有词典均未收录"
+          },
+          "503": {
+            "description": "在线源查询失败；如实说明暂不可用，不可说未收录"
+          }
+        }
+      }
+    },
+    "/cet_search/{prefix}": {
+      "get": {
+        "operationId": "cetSearch",
+        "summary": "前缀搜索 CET 词源数据库",
+        "description": "按前缀模糊搜索本地 CET 词源数据库，返回匹配的单词列表。用于用户输入不完整时提供建议。",
+        "parameters": [
+          {
+            "name": "prefix",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "搜索前缀，如 rad 匹配 radiation、radius 等"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "返回结果数量上限"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "prefix": {
+                      "type": "string"
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "words": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "word": {
+                            "type": "string"
+                          },
+                          "level": {
+                            "type": "string"
+                          },
+                          "pie_root": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cet_stats": {
+      "get": {
+        "operationId": "cetStats",
+        "summary": "获取 CET 词源数据库统计",
+        "description": "返回数据库中的单词总数、按级别分布、PIE 词根数量及 TOP 10 高频词根。用于学习进度展示。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "by_level": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "integer"
+                      }
+                    },
+                    "pie_roots": {
+                      "type": "integer"
+                    },
+                    "top_pie_roots": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "root": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/quiz": {
+      "get": {
+        "operationId": "quiz",
+        "summary": "生成已保存学习卡的语境填空题，优先较早到期的词",
+        "description": "生成已保存学习卡的语境填空题，优先较早到期的词。仅返回题目与 quiz_id，不返回答案；请让用户先作答。无适合例句的卡片时先学习建卡。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "quiz_id": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "question": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "instruction": {
+                      "type": "string",
+                      "description": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数无效"
+          },
+          "404": {
+            "description": "尚无记录或当前查询未找到可用结果"
+          }
+        },
+        "parameters": [
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "",
+              "enum": [
+                "CET4",
+                "CET6"
+              ]
+            },
+            "description": "本地词表级别筛选；省略则不限"
+          }
+        ]
+      }
+    },
+    "/learning/card": {
+      "post": {
+        "operationId": "saveLearningCard",
+        "summary": "保存或更新词汇学习卡",
+        "description": "保存或更新词汇学习卡。单词释义、搭配、词源记忆和例句分别存储。更新内容不重置复习进度；新卡立即可复习。仅在用户学习/入库时保存，纯查词源不自动保存。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "card": {
+                      "type": "object",
+                      "properties": {
+                        "word": {
+                          "type": "string",
+                          "description": "英文词典形、小写"
+                        },
+                        "definition": {
+                          "type": "string",
+                          "description": "单词的常用中文义；不要填词根意象"
+                        },
+                        "part_of_speech": {
+                          "type": "string",
+                          "description": "词性，例如 v. 或 n."
+                        },
+                        "etymology_summary": {
+                          "type": "string",
+                          "description": "中文词源链与字面义到现代义的演变，保留来源不确定性"
+                        },
+                        "source_note": {
+                          "type": "string",
+                          "description": "说明哪些内容来自 getEtymology，哪些是模型补充或记忆联想"
+                        },
+                        "example": {
+                          "type": "string",
+                          "description": "学习例句，必须含 word 的完整词典形；自造句不能声称是真题"
+                        },
+                        "example_translation": {
+                          "type": "string",
+                          "description": "例句中文释义"
+                        },
+                        "memory_hint": {
+                          "type": "string",
+                          "description": "以词根核心意象为中心的记忆线索；非历史事实的联想明确标注"
+                        },
+                        "roots": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "description": "规范家族名；不可拆词可为空数组"
+                          }
+                        },
+                        "collocations": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "description": "常见搭配及中文释义，建议 1–2 个"
+                          }
+                        },
+                        "level": {
+                          "type": "string",
+                          "description": "本地 CET 词表标签，不代表真题频率",
+                          "nullable": true
+                        },
+                        "due_at": {
+                          "type": "string",
+                          "description": "下次复习时间，ISO 8601 UTC"
+                        },
+                        "stage": {
+                          "type": "integer"
+                        },
+                        "reviews": {
+                          "type": "integer"
+                        },
+                        "lapses": {
+                          "type": "integer"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "learning 或 reviewing；不宣称已经掌握"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数无效"
+          },
+          "404": {
+            "description": "尚无记录或当前查询未找到可用结果"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "word": {
+                    "type": "string",
+                    "description": "英文词典形、小写"
+                  },
+                  "definition": {
+                    "type": "string",
+                    "description": "单词的常用中文义；不要填词根意象"
+                  },
+                  "part_of_speech": {
+                    "type": "string",
+                    "description": "词性，例如 v. 或 n."
+                  },
+                  "etymology_summary": {
+                    "type": "string",
+                    "description": "中文词源链与字面义到现代义的演变，保留来源不确定性"
+                  },
+                  "source_note": {
+                    "type": "string",
+                    "description": "说明哪些内容来自 getEtymology，哪些是模型补充或记忆联想"
+                  },
+                  "example": {
+                    "type": "string",
+                    "description": "学习例句，必须含 word 的完整词典形；自造句不能声称是真题"
+                  },
+                  "example_translation": {
+                    "type": "string",
+                    "description": "例句中文释义"
+                  },
+                  "memory_hint": {
+                    "type": "string",
+                    "description": "以词根核心意象为中心的记忆线索；非历史事实的联想明确标注"
+                  },
+                  "roots": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "description": "规范家族名；不可拆词可为空数组"
+                    }
+                  },
+                  "collocations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "description": "常见搭配及中文释义，建议 1–2 个"
+                    }
+                  }
+                },
+                "required": [
+                  "word",
+                  "definition",
+                  "part_of_speech",
+                  "etymology_summary",
+                  "source_note",
+                  "example",
+                  "example_translation"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/learning/card/{word}": {
+      "get": {
+        "operationId": "getLearningCard",
+        "summary": "读取已保存的学习卡和复习进度",
+        "description": "读取已保存的学习卡和复习进度。404 只表示尚未建卡，不表示词不存在。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "word": {
+                      "type": "string",
+                      "description": "英文词典形、小写"
+                    },
+                    "definition": {
+                      "type": "string",
+                      "description": "单词的常用中文义；不要填词根意象"
+                    },
+                    "part_of_speech": {
+                      "type": "string",
+                      "description": "词性，例如 v. 或 n."
+                    },
+                    "etymology_summary": {
+                      "type": "string",
+                      "description": "中文词源链与字面义到现代义的演变，保留来源不确定性"
+                    },
+                    "source_note": {
+                      "type": "string",
+                      "description": "说明哪些内容来自 getEtymology，哪些是模型补充或记忆联想"
+                    },
+                    "example": {
+                      "type": "string",
+                      "description": "学习例句，必须含 word 的完整词典形；自造句不能声称是真题"
+                    },
+                    "example_translation": {
+                      "type": "string",
+                      "description": "例句中文释义"
+                    },
+                    "memory_hint": {
+                      "type": "string",
+                      "description": "以词根核心意象为中心的记忆线索；非历史事实的联想明确标注"
+                    },
+                    "roots": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "description": "规范家族名；不可拆词可为空数组"
+                      }
+                    },
+                    "collocations": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "description": "常见搭配及中文释义，建议 1–2 个"
+                      }
+                    },
+                    "level": {
+                      "type": "string",
+                      "description": "本地 CET 词表标签，不代表真题频率",
+                      "nullable": true
+                    },
+                    "due_at": {
+                      "type": "string",
+                      "description": "下次复习时间，ISO 8601 UTC"
+                    },
+                    "stage": {
+                      "type": "integer"
+                    },
+                    "reviews": {
+                      "type": "integer"
+                    },
+                    "lapses": {
+                      "type": "integer"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "learning 或 reviewing；不宣称已经掌握"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数无效"
+          },
+          "404": {
+            "description": "尚无记录或当前查询未找到可用结果"
+          }
+        },
+        "parameters": [
+          {
+            "name": "word",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": ""
+            }
+          }
+        ]
+      }
+    },
+    "/learning/review": {
+      "get": {
+        "operationId": "reviewQueue",
+        "summary": "列出到期学习卡",
+        "description": "列出到期学习卡。出题时不要先展示卡片答案。旧词族笔记不会自动计入学习卡；只有实际学习并保存的卡片参与复习。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_cards": {
+                      "type": "integer"
+                    },
+                    "due_count": {
+                      "type": "integer"
+                    },
+                    "cards": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "word": {
+                            "type": "string",
+                            "description": "英文词典形、小写"
+                          },
+                          "definition": {
+                            "type": "string",
+                            "description": "单词的常用中文义；不要填词根意象"
+                          },
+                          "part_of_speech": {
+                            "type": "string",
+                            "description": "词性，例如 v. 或 n."
+                          },
+                          "etymology_summary": {
+                            "type": "string",
+                            "description": "中文词源链与字面义到现代义的演变，保留来源不确定性"
+                          },
+                          "source_note": {
+                            "type": "string",
+                            "description": "说明哪些内容来自 getEtymology，哪些是模型补充或记忆联想"
+                          },
+                          "example": {
+                            "type": "string",
+                            "description": "学习例句，必须含 word 的完整词典形；自造句不能声称是真题"
+                          },
+                          "example_translation": {
+                            "type": "string",
+                            "description": "例句中文释义"
+                          },
+                          "memory_hint": {
+                            "type": "string",
+                            "description": "以词根核心意象为中心的记忆线索；非历史事实的联想明确标注"
+                          },
+                          "roots": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "description": "规范家族名；不可拆词可为空数组"
+                            }
+                          },
+                          "collocations": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "description": "常见搭配及中文释义，建议 1–2 个"
+                            }
+                          },
+                          "level": {
+                            "type": "string",
+                            "description": "本地 CET 词表标签，不代表真题频率",
+                            "nullable": true
+                          },
+                          "due_at": {
+                            "type": "string",
+                            "description": "下次复习时间，ISO 8601 UTC"
+                          },
+                          "stage": {
+                            "type": "integer"
+                          },
+                          "reviews": {
+                            "type": "integer"
+                          },
+                          "lapses": {
+                            "type": "integer"
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": "learning 或 reviewing；不宣称已经掌握"
+                          }
+                        }
+                      }
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "time_zone": {
+                      "type": "string",
+                      "description": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数无效"
+          },
+          "404": {
+            "description": "尚无记录或当前查询未找到可用结果"
+          }
+        },
+        "parameters": [
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "",
+              "enum": [
+                "CET4",
+                "CET6"
+              ]
+            },
+            "description": "本地词表级别筛选；省略则不限"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 20
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "recordReview",
+        "summary": "记录用户实际复习后的自评：again 忘记（10分钟后），hard 吃力（1天后），good 记住（1/3/7/14/30/60天递进）",
+        "description": "记录用户实际复习后的自评：again 忘记（10分钟后），hard 吃力（1天后），good 记住（1/3/7/14/30/60天递进）。不能根据入库或讲解自行判断掌握。每次真实复习使用不同 event_id，网络重试复用原 event_id。answerQuiz 已记录的结果不要再次调用本工具。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "word": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "rating": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "due_at": {
+                      "type": "string",
+                      "description": "UTC 时间"
+                    },
+                    "stage": {
+                      "type": "integer"
+                    },
+                    "reviews": {
+                      "type": "integer"
+                    },
+                    "lapses": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数无效"
+          },
+          "404": {
+            "description": "尚无记录或当前查询未找到可用结果"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "word": {
+                    "type": "string",
+                    "description": ""
+                  },
+                  "rating": {
+                    "type": "string",
+                    "description": "",
+                    "enum": [
+                      "again",
+                      "hard",
+                      "good"
+                    ]
+                  },
+                  "event_id": {
+                    "type": "string",
+                    "description": "每次复习唯一标识，如单词加本次时间"
+                  }
+                },
+                "required": [
+                  "word",
+                  "rating",
+                  "event_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/learning/study": {
+      "get": {
+        "operationId": "studyWords",
+        "summary": "按 CET4/CET6 从本地词表选择尚未建学习卡的候选单词",
+        "description": "按 CET4/CET6 从本地词表选择尚未建学习卡的候选单词。仅选择，不算学过；旧词族中的词可能仍出现。没有词频排序或官方大纲保证。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "words": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "word": {
+                            "type": "string",
+                            "description": ""
+                          },
+                          "level": {
+                            "type": "string",
+                            "description": ""
+                          }
+                        }
+                      }
+                    },
+                    "available": {
+                      "type": "integer"
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数无效"
+          },
+          "404": {
+            "description": "尚无记录或当前查询未找到可用结果"
+          }
+        },
+        "parameters": [
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "",
+              "enum": [
+                "CET4",
+                "CET6"
+              ]
+            },
+            "description": "本地词表级别筛选；省略则不限"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 20
+            }
+          }
+        ]
+      }
+    },
+    "/quiz/answer": {
+      "post": {
+        "operationId": "answerQuiz",
+        "summary": "提交用户原始答案，核对本题目标词并记录一次复习，重试不重复计分",
+        "description": "提交用户原始答案，核对本题目标词并记录一次复习，重试不重复计分。返回答案、学习卡和词源用于讲解。语境可能容许同义词，未命中目标词不等于句子语法错误，应解释差别。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "correct": {
+                      "type": "boolean"
+                    },
+                    "answer": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "review": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "description": ""
+                        },
+                        "word": {
+                          "type": "string",
+                          "description": ""
+                        },
+                        "rating": {
+                          "type": "string",
+                          "description": ""
+                        },
+                        "due_at": {
+                          "type": "string",
+                          "description": "UTC 时间"
+                        },
+                        "stage": {
+                          "type": "integer"
+                        },
+                        "reviews": {
+                          "type": "integer"
+                        },
+                        "lapses": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "card": {
+                      "type": "object",
+                      "properties": {
+                        "word": {
+                          "type": "string",
+                          "description": "英文词典形、小写"
+                        },
+                        "definition": {
+                          "type": "string",
+                          "description": "单词的常用中文义；不要填词根意象"
+                        },
+                        "part_of_speech": {
+                          "type": "string",
+                          "description": "词性，例如 v. 或 n."
+                        },
+                        "etymology_summary": {
+                          "type": "string",
+                          "description": "中文词源链与字面义到现代义的演变，保留来源不确定性"
+                        },
+                        "source_note": {
+                          "type": "string",
+                          "description": "说明哪些内容来自 getEtymology，哪些是模型补充或记忆联想"
+                        },
+                        "example": {
+                          "type": "string",
+                          "description": "学习例句，必须含 word 的完整词典形；自造句不能声称是真题"
+                        },
+                        "example_translation": {
+                          "type": "string",
+                          "description": "例句中文释义"
+                        },
+                        "memory_hint": {
+                          "type": "string",
+                          "description": "以词根核心意象为中心的记忆线索；非历史事实的联想明确标注"
+                        },
+                        "roots": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "description": "规范家族名；不可拆词可为空数组"
+                          }
+                        },
+                        "collocations": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "description": "常见搭配及中文释义，建议 1–2 个"
+                          }
+                        },
+                        "level": {
+                          "type": "string",
+                          "description": "本地 CET 词表标签，不代表真题频率",
+                          "nullable": true
+                        },
+                        "due_at": {
+                          "type": "string",
+                          "description": "下次复习时间，ISO 8601 UTC"
+                        },
+                        "stage": {
+                          "type": "integer"
+                        },
+                        "reviews": {
+                          "type": "integer"
+                        },
+                        "lapses": {
+                          "type": "integer"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "learning 或 reviewing；不宣称已经掌握"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数无效"
+          },
+          "404": {
+            "description": "尚无记录或当前查询未找到可用结果"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "quiz_id": {
+                    "type": "string",
+                    "description": ""
+                  },
+                  "answer": {
+                    "type": "string",
+                    "description": "原样提交用户作答，不能替用户改成正确答案"
+                  }
+                },
+                "required": [
+                  "quiz_id",
+                  "answer"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
